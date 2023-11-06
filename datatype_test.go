@@ -61,3 +61,22 @@ func TestPopulateSnowflakeParameter(t *testing.T) {
 		}
 	}
 }
+
+func TestLobSize(t *testing.T) {
+	runDBTest(t, func(dbt *DBTest) {
+		largeLobSize := 15 * 1024 * 1024
+		dbt.mustExec(fmt.Sprintf("create table if not exists my_lob_test (c1 varchar, c2 varchar(%v), c3 int);", largeLobSize))
+		defer dbt.mustExec("drop table my_lob_test")
+		rows := dbt.mustQuery("SELECT * FROM my_lob_test")
+		defer rows.Close()
+		columnTypes, err := rows.ColumnTypes()
+		assertNilF(t, err)
+		for _, ct := range columnTypes {
+			length, ok := ct.Length()
+			if !ok {
+				length = -1
+			}
+			fmt.Printf("name: %v, database type name: %v, length: %v\n", ct.Name(), ct.DatabaseTypeName(), length)
+		}
+	})
+}
