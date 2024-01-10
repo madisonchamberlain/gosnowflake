@@ -10,10 +10,10 @@ import (
 	"strings"
 )
 
-type snowflakeType int
+type SnowflakeType int
 
 const (
-	fixedType snowflakeType = iota
+	fixedType SnowflakeType = iota
 	realType
 	textType
 	dateType
@@ -26,14 +26,14 @@ const (
 	binaryType
 	timeType
 	booleanType
-	// the following are not snowflake types per se but internal types
 	nullType
+	// the following are not snowflake types per se but internal types
 	sliceType
 	changeType
 	unSupportedType
 )
 
-var snowflakeToDriverType = map[string]snowflakeType{
+var snowflakeToDriverType = map[string]SnowflakeType{
 	"FIXED":         fixedType,
 	"REAL":          realType,
 	"TEXT":          textType,
@@ -54,8 +54,8 @@ var snowflakeToDriverType = map[string]snowflakeType{
 
 var driverTypeToSnowflake = invertMap(snowflakeToDriverType)
 
-func invertMap(m map[string]snowflakeType) map[snowflakeType]string {
-	inv := make(map[snowflakeType]string)
+func invertMap(m map[string]SnowflakeType) map[SnowflakeType]string {
+	inv := make(map[SnowflakeType]string)
 	for k, v := range m {
 		if _, ok := inv[v]; ok {
 			panic("failed to create driverTypeToSnowflake map due to duplicated values")
@@ -65,15 +65,15 @@ func invertMap(m map[string]snowflakeType) map[snowflakeType]string {
 	return inv
 }
 
-func (st snowflakeType) Byte() byte {
+func (st SnowflakeType) Byte() byte {
 	return byte(st)
 }
 
-func (st snowflakeType) String() string {
+func (st SnowflakeType) String() string {
 	return driverTypeToSnowflake[st]
 }
 
-func getSnowflakeType(typ string) snowflakeType {
+func getSnowflakeType(typ string) SnowflakeType {
 	return snowflakeToDriverType[strings.ToUpper(typ)]
 }
 
@@ -104,10 +104,12 @@ var (
 	DataTypeTime = []byte{timeType.Byte()}
 	// DataTypeBoolean is a BOOLEAN datatype.
 	DataTypeBoolean = []byte{booleanType.Byte()}
+	// DataTypeNull is a NULL datatype.
+	DataTypeNull = []byte{nullType.Byte()}
 )
 
 // dataTypeMode returns the subsequent data type in a string representation.
-func dataTypeMode(v driver.Value) (tsmode snowflakeType, err error) {
+func dataTypeMode(v driver.Value) (tsmode SnowflakeType, err error) {
 	if bd, ok := v.([]byte); ok {
 		switch {
 		case bytes.Equal(bd, DataTypeDate):

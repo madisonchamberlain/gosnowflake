@@ -299,7 +299,7 @@ func supportedArrayBind(nv *driver.NamedValue) bool {
 		if len(val) == 0 {
 			return true // for null binds
 		}
-		if fixedType <= snowflakeType(val[0]) && snowflakeType(val[0]) <= unSupportedType {
+		if fixedType <= SnowflakeType(val[0]) && SnowflakeType(val[0]) <= unSupportedType {
 			return true
 		}
 		return false

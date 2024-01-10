@@ -57,7 +57,7 @@ func isInterfaceArrayBinding(t interface{}) bool {
 }
 
 // goTypeToSnowflake translates Go data type to Snowflake data type.
-func goTypeToSnowflake(v driver.Value, tsmode snowflakeType) snowflakeType {
+func goTypeToSnowflake(v driver.Value, tsmode SnowflakeType) SnowflakeType {
 	switch t := v.(type) {
 	case int64, sql.NullInt64:
 		return fixedType
@@ -90,8 +90,8 @@ func goTypeToSnowflake(v driver.Value, tsmode snowflakeType) snowflakeType {
 	return unSupportedType
 }
 
-// snowflakeTypeToGo translates Snowflake data type to Go data type.
-func snowflakeTypeToGo(dbtype snowflakeType, scale int64) reflect.Type {
+// SnowflakeTypeToGo translates Snowflake data type to Go data type.
+func SnowflakeTypeToGo(dbtype SnowflakeType, scale int64) reflect.Type {
 	switch dbtype {
 	case fixedType:
 		if scale == 0 {
@@ -115,7 +115,7 @@ func snowflakeTypeToGo(dbtype snowflakeType, scale int64) reflect.Type {
 
 // valueToString converts arbitrary golang type to a string. This is mainly used in binding data with placeholders
 // in queries.
-func valueToString(v driver.Value, tsmode snowflakeType) (*string, error) {
+func valueToString(v driver.Value, tsmode SnowflakeType) (*string, error) {
 	logger.Debugf("TYPE: %v, %v", reflect.TypeOf(v), reflect.ValueOf(v))
 	if v == nil {
 		return nil, nil
@@ -184,7 +184,7 @@ func valueToString(v driver.Value, tsmode snowflakeType) (*string, error) {
 	return nil, fmt.Errorf("unsupported type: %v", v1.Kind())
 }
 
-func timeTypeValueToString(tm time.Time, tsmode snowflakeType) (*string, error) {
+func timeTypeValueToString(tm time.Time, tsmode SnowflakeType) (*string, error) {
 	switch tsmode {
 	case dateType:
 		_, offset := tm.Zone()
@@ -363,7 +363,7 @@ func (rb *ArrowBatch) ArrowSnowflakeTimestampToTime(rec arrow.Record, colIdx int
 
 func arrowSnowflakeTimestampToTime(
 	column arrow.Array,
-	sfType snowflakeType,
+	sfType SnowflakeType,
 	scale int,
 	recIdx int,
 	loc *time.Location) *time.Time {
@@ -442,8 +442,8 @@ func arrowToValue(
 	}
 	logger.Debugf("snowflake data type: %v, arrow data type: %v", srcColumnMeta.Type, srcValue.DataType())
 
-	snowflakeType := getSnowflakeType(srcColumnMeta.Type)
-	switch snowflakeType {
+	SnowflakeType := getSnowflakeType(srcColumnMeta.Type)
+	switch SnowflakeType {
 	case fixedType:
 		// Snowflake data types that are fixed-point numbers will fall into this category
 		// e.g. NUMBER, DECIMAL/NUMERIC, INT/INTEGER
@@ -604,7 +604,7 @@ func arrowToValue(
 		return err
 	case timestampNtzType, timestampLtzType, timestampTzType:
 		for i := range destcol {
-			var ts = arrowSnowflakeTimestampToTime(srcValue, snowflakeType, int(srcColumnMeta.Scale), i, loc)
+			var ts = arrowSnowflakeTimestampToTime(srcValue, SnowflakeType, int(srcColumnMeta.Scale), i, loc)
 			if ts != nil {
 				destcol[i] = *ts
 			}
@@ -724,8 +724,8 @@ func Array(a interface{}, typ ...timezoneType) interface{} {
 // snowflakeArrayToString converts the array binding to snowflake's native
 // string type. The string value differs whether it's directly bound or
 // uploaded via stream.
-func snowflakeArrayToString(nv *driver.NamedValue, stream bool) (snowflakeType, []*string) {
-	var t snowflakeType
+func snowflakeArrayToString(nv *driver.NamedValue, stream bool) (SnowflakeType, []*string) {
+	var t SnowflakeType
 	var arr []*string
 	switch reflect.TypeOf(nv.Value) {
 	case reflect.TypeOf(&intArray{}):
@@ -855,8 +855,8 @@ func snowflakeArrayToString(nv *driver.NamedValue, stream bool) (snowflakeType, 
 	return t, arr
 }
 
-func interfaceSliceToString(interfaceSlice reflect.Value, stream bool, tzType ...timezoneType) (snowflakeType, []*string) {
-	var t snowflakeType
+func interfaceSliceToString(interfaceSlice reflect.Value, stream bool, tzType ...timezoneType) (SnowflakeType, []*string) {
+	var t SnowflakeType
 	var arr []*string
 
 	for i := 0; i < interfaceSlice.Len(); i++ {
@@ -994,8 +994,8 @@ func arrowToRecord(ctx context.Context, record arrow.Record, pool memory.Allocat
 
 		// TODO: confirm that it is okay to be using higher precision logic for conversions
 		newCol := col
-		snowflakeType := getSnowflakeType(srcColumnMeta.Type)
-		switch snowflakeType {
+		SnowflakeType := getSnowflakeType(srcColumnMeta.Type)
+		switch SnowflakeType {
 		case fixedType:
 			var toType arrow.DataType
 			if col.DataType().ID() == arrow.DECIMAL || col.DataType().ID() == arrow.DECIMAL256 {
@@ -1033,7 +1033,7 @@ func arrowToRecord(ctx context.Context, record arrow.Record, pool memory.Allocat
 				// do nothing - return timestamp as is
 			} else {
 				var tb *array.TimestampBuilder
-				if snowflakeType == timestampLtzType {
+				if SnowflakeType == timestampLtzType {
 					tb = array.NewTimestampBuilder(pool, &arrow.TimestampType{Unit: arrow.Nanosecond, TimeZone: loc.String()})
 				} else {
 					tb = array.NewTimestampBuilder(pool, &arrow.TimestampType{Unit: arrow.Nanosecond})
@@ -1041,7 +1041,7 @@ func arrowToRecord(ctx context.Context, record arrow.Record, pool memory.Allocat
 				defer tb.Release()
 
 				for i := 0; i < int(numRows); i++ {
-					ts := arrowSnowflakeTimestampToTime(col, snowflakeType, int(srcColumnMeta.Scale), i, loc)
+					ts := arrowSnowflakeTimestampToTime(col, SnowflakeType, int(srcColumnMeta.Scale), i, loc)
 					if ts != nil {
 						ar := arrow.Timestamp(ts.UnixNano())
 						// in case of overflow in arrow timestamp return error
@@ -1126,14 +1126,14 @@ func recordToSchema(sc *arrow.Schema, rowType []execResponseRowType, loc *time.L
 	return arrow.NewSchema(fields, &meta), nil
 }
 
-// TypedNullTime is required to properly bind the null value with the snowflakeType as the Snowflake functions
+// TypedNullTime is required to properly bind the null value with the SnowflakeType as the Snowflake functions
 // require the type of the field to be provided explicitly for the null values
 type TypedNullTime struct {
 	Time   sql.NullTime
 	TzType timezoneType
 }
 
-func convertTzTypeToSnowflakeType(tzType timezoneType) snowflakeType {
+func convertTzTypeToSnowflakeType(tzType timezoneType) SnowflakeType {
 	switch tzType {
 	case TimestampNTZType:
 		return timestampNtzType

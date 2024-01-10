@@ -10,7 +10,7 @@ import (
 
 type tcDataTypeMode struct {
 	tp    driver.Value
-	tmode snowflakeType
+	tmode SnowflakeType
 	err   error
 }
 

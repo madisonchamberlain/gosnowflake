@@ -66,8 +66,8 @@ func stringFloatToInt(src string, scale int64) (int64, bool) {
 
 type tcGoTypeToSnowflake struct {
 	in    interface{}
-	tmode snowflakeType
-	out   snowflakeType
+	tmode SnowflakeType
+	out   SnowflakeType
 }
 
 func TestGoTypeToSnowflake(t *testing.T) {
@@ -139,7 +139,7 @@ func TestGoTypeToSnowflake(t *testing.T) {
 }
 
 type tcSnowflakeTypeToGo struct {
-	in    snowflakeType
+	in    SnowflakeType
 	scale int64
 	out   reflect.Type
 }
@@ -164,7 +164,7 @@ func TestSnowflakeTypeToGo(t *testing.T) {
 	}
 	for _, test := range testcases {
 		t.Run(fmt.Sprintf("%v_%v", test.in, test.out), func(t *testing.T) {
-			a := snowflakeTypeToGo(test.in, test.scale)
+			a := SnowflakeTypeToGo(test.in, test.scale)
 			if a != test.out {
 				t.Errorf("failed. in: %v, scale: %v, expected: %v, got: %v",
 					test.in, test.scale, test.out, a)
@@ -312,7 +312,7 @@ func TestStringToValue(t *testing.T) {
 
 type tcArrayToString struct {
 	in  driver.NamedValue
-	typ snowflakeType
+	typ SnowflakeType
 	out []string
 }
 
@@ -1813,7 +1813,7 @@ func TestTimeTypeValueToString(t *testing.T) {
 
 	testcases := []struct {
 		in     time.Time
-		tsmode snowflakeType
+		tsmode SnowflakeType
 		out    string
 	}{
 		{timeValue, dateType, "1577959872000"},
